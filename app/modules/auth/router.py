@@ -9,6 +9,7 @@ from app.modules.auth.schema import (
     UserResponse,
 )
 from app.modules.auth.service import AuthService
+from app.shared.response import success
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -16,21 +17,21 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(data: RegisterRequest, db: DbSession):
     user = await AuthService(db).register(**data.model_dump())
-    return {"data": UserResponse.model_validate(user).model_dump(mode="json"), "status": "created"}
+    return success(UserResponse.model_validate(user).model_dump(mode="json"), "created")
 
 
 @router.post("/login")
 async def login(data: LoginRequest, db: DbSession):
     access, refresh = await AuthService(db).login(data.email, data.password)
     tokens = TokenResponse(access_token=access, refresh_token=refresh)
-    return {"data": tokens.model_dump(), "status": "ok"}
+    return success(tokens.model_dump())
 
 
 @router.post("/refresh")
 async def refresh(data: RefreshRequest, db: DbSession):
     access, refresh = await AuthService(db).refresh(data.refresh_token)
     tokens = TokenResponse(access_token=access, refresh_token=refresh)
-    return {"data": tokens.model_dump(), "status": "ok"}
+    return success(tokens.model_dump())
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -40,4 +41,4 @@ async def logout(data: RefreshRequest, db: DbSession):
 
 @router.get("/me")
 async def me(user: CurrentUser):
-    return {"data": UserResponse.model_validate(user).model_dump(mode="json"), "status": "ok"}
+    return success(UserResponse.model_validate(user).model_dump(mode="json"))
