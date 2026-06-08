@@ -7,6 +7,7 @@ from app.core import security
 from app.core.config import settings
 from app.core.exceptions import AppError
 from app.modules.auth.models import AccountStatus, RefreshToken, User
+from app.providers.email.render import render_email
 from app.providers.email.tasks import send_email
 
 MAX_FAILED_ATTEMPTS = 5
@@ -28,7 +29,8 @@ class AuthService:
         )
         self.db.add(user)
         await self.db.commit()
-        send_email.delay(user.email, "Welcome", f"<p>Welcome, {user.first_name}!</p>")
+        html = render_email("welcome.html", first_name=user.first_name, app_name=settings.APP_NAME)
+        send_email.delay(user.email, "Welcome", html)
         return user
 
     async def login(self, email: str, password: str) -> tuple[str, str]:
