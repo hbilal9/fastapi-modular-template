@@ -25,4 +25,4 @@ celery_app.conf.beat_schedule = {
     },
 }
 
-celery_app.autodiscover_tasks(["app.modules.auth"])
+celery_app.autodiscover_tasks(["app.modules.auth", "app.providers.email"])

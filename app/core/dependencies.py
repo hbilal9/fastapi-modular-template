@@ -11,8 +11,6 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.exceptions import AppError
 from app.modules.auth.models import User
-from app.providers.email import get_email_provider
-from app.providers.email.base import EmailProvider
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
@@ -44,5 +42,3 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
-
-EmailSender = Annotated[EmailProvider, Depends(get_email_provider)]
