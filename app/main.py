@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.exceptions import AppError, app_error_handler, validation_error_handler
 from app.core.lifespan import lifespan
+from app.modules.auth.router import router as auth_router
 
 
 def create_app() -> FastAPI:
@@ -24,6 +25,8 @@ def create_app() -> FastAPI:
     @app.get("/api/health")
     async def health():
         return {"data": {"status": "ok"}, "status": "healthy"}
+
+    app.include_router(auth_router, prefix="/api")
 
     return app
 
