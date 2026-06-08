@@ -136,10 +136,16 @@ raise AppError("Email already registered.", 409)
 | POST | `/api/auth/refresh` | refresh_token |
 | POST | `/api/auth/logout` | refresh_token |
 | GET | `/api/auth/me` | — (Bearer) |
+| POST | `/api/auth/verify-email` | token |
+| POST | `/api/auth/resend-verification` | email |
+| POST | `/api/auth/forgot-password` | email |
+| POST | `/api/auth/reset-password` | token, password |
 
 - Passwords hashed with bcrypt **off the event loop** (`anyio.to_thread`).
 - Refresh tokens are stored hashed and **rotated** on every refresh; logout revokes them.
 - Account locks after 5 failed logins; a constant-time guard avoids user enumeration.
+- Registration emails a **verification** link (24 h); `is_verified` flips on `/verify-email`. Resend and forgot-password are rate-limited (3 / 5 min) and never leak whether an email exists.
+- **Password reset** via emailed token (30 min); resetting revokes all of the user's refresh tokens.
 - Protect a route with the current user:
   ```python
   from app.core.dependencies import CurrentUser
