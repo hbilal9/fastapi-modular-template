@@ -3,12 +3,14 @@ from fastapi import APIRouter, status
 from app.core.dependencies import CurrentUser, DbSession
 from app.modules.auth.mfa import MfaService
 from app.modules.auth.schema import (
+    ForgotPasswordRequest,
     LoginRequest,
     MfaCodeRequest,
     MfaVerifyRequest,
     RefreshRequest,
     RegisterRequest,
     ResendVerificationRequest,
+    ResetPasswordRequest,
     TokenResponse,
     UserResponse,
     VerifyEmailRequest,
@@ -46,6 +48,18 @@ async def verify_email(data: VerifyEmailRequest, db: DbSession):
 async def resend_verification(data: ResendVerificationRequest, db: DbSession):
     await AuthService(db).resend_verification(data.email)
     return success(status="sent")
+
+
+@router.post("/forgot-password", dependencies=[EmailRateLimit])
+async def forgot_password(data: ForgotPasswordRequest, db: DbSession):
+    await AuthService(db).forgot_password(data.email)
+    return success(status="sent")
+
+
+@router.post("/reset-password")
+async def reset_password(data: ResetPasswordRequest, db: DbSession):
+    await AuthService(db).reset_password(data.token, data.password)
+    return success(status="reset")
 
 
 @router.post("/refresh")

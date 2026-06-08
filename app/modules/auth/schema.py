@@ -4,6 +4,16 @@ import uuid
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
+def _strong_password(v: str) -> str:
+    if not re.search(r"[A-Z]", v):
+        raise ValueError("Password must contain an uppercase letter")
+    if not re.search(r"[a-z]", v):
+        raise ValueError("Password must contain a lowercase letter")
+    if not re.search(r"\d", v):
+        raise ValueError("Password must contain a number")
+    return v
+
+
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=100)
@@ -12,14 +22,8 @@ class RegisterRequest(BaseModel):
 
     @field_validator("password")
     @classmethod
-    def strong_password(cls, v: str) -> str:
-        if not re.search(r"[A-Z]", v):
-            raise ValueError("Password must contain an uppercase letter")
-        if not re.search(r"[a-z]", v):
-            raise ValueError("Password must contain a lowercase letter")
-        if not re.search(r"\d", v):
-            raise ValueError("Password must contain a number")
-        return v
+    def validate_password(cls, v: str) -> str:
+        return _strong_password(v)
 
 
 class LoginRequest(BaseModel):
@@ -64,3 +68,17 @@ class VerifyEmailRequest(BaseModel):
 
 class ResendVerificationRequest(BaseModel):
     email: EmailStr
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    password: str = Field(min_length=8, max_length=100)
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        return _strong_password(v)

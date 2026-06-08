@@ -45,6 +45,10 @@ def create_verification_token(subject: str) -> str:
     return _encode(subject, "verify", timedelta(hours=24), None)
 
 
+def create_reset_token(subject: str) -> str:
+    return _encode(subject, "reset", timedelta(minutes=30), None)
+
+
 def _encode(subject: str, token_type: str, expires_in: timedelta, claims: dict | None) -> str:
     now = datetime.now(UTC)
     payload = {

@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import security
@@ -59,6 +59,31 @@ class AuthService:
         user = await self._get_by_email(email.lower())
         if user and not user.is_verified:
             self._send_verification(user)
+
+    async def forgot_password(self, email: str) -> None:
+        user = await self._get_by_email(email.lower())
+        if not user:
+            return
+        token = security.create_reset_token(str(user.id))
+        reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+        html = render_email(
+            "password_reset.html",
+            first_name=user.first_name,
+            app_name=settings.APP_NAME,
+            reset_url=reset_url,
+        )
+        send_email.delay(user.email, "Reset your password", html)
+
+    async def reset_password(self, token: str, password: str) -> None:
+        payload = security.decode_token(token, "reset")
+        if not payload:
+            raise AppError("Invalid or expired token.", 400)
+        user = await self.db.get(User, uuid.UUID(payload["sub"]))
+        if not user:
+            raise AppError("Invalid or expired token.", 400)
+        user.password_hash = await security.hash_password(password)
+        await self._revoke_user_tokens(user.id)
+        await self.db.commit()
 
     async def login(self, email: str, password: str) -> dict:
         user = await self._get_by_email(email.lower())
@@ -143,3 +168,10 @@ class AuthService:
             select(RefreshToken).where(RefreshToken.token_hash == token_hash)
         )
         return result.scalar_one_or_none()
+
+    async def _revoke_user_tokens(self, user_id: uuid.UUID) -> None:
+        await self.db.execute(
+            update(RefreshToken)
+            .where(RefreshToken.user_id == user_id, RefreshToken.revoked.is_(False))
+            .values(revoked=True)
+        )
