@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Awaitable, Callable
 from typing import Annotated
 
 import redis.asyncio as redis
@@ -10,7 +11,7 @@ from app.core import security
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.exceptions import AppError
-from app.modules.auth.models import User
+from app.modules.auth.models import User, UserRole
 from app.providers.storage import get_storage_provider
 from app.providers.storage.base import StorageProvider
 
@@ -46,3 +47,15 @@ async def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 Storage = Annotated[StorageProvider, Depends(get_storage_provider)]
+
+
+def require_role(*roles: str) -> Callable[[User], Awaitable[User]]:
+    async def dependency(user: CurrentUser) -> User:
+        if user.role != UserRole.SUPER_ADMIN and user.role not in roles:
+            raise AppError("Insufficient permissions.", 403)
+        return user
+
+    return dependency
+
+
+AdminUser = Annotated[User, Depends(require_role(UserRole.ADMIN))]
