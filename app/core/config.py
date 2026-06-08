@@ -25,6 +25,14 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 15
 
+    EMAIL_PROVIDER: str = "console"
+    SMTP_HOST: str = "localhost"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "no-reply@example.com"
+    SMTP_TLS: bool = True
+
     @property
     def DATABASE_URL(self) -> str:
         return (
