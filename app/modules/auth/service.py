@@ -31,9 +31,34 @@ class AuthService:
         )
         self.db.add(user)
         await self.db.commit()
-        html = render_email("welcome.html", first_name=user.first_name, app_name=settings.APP_NAME)
-        send_email.delay(user.email, "Welcome", html)
+        self._send_verification(user)
         return user
+
+    def _send_verification(self, user: User) -> None:
+        token = security.create_verification_token(str(user.id))
+        verify_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+        html = render_email(
+            "verification.html",
+            first_name=user.first_name,
+            app_name=settings.APP_NAME,
+            verify_url=verify_url,
+        )
+        send_email.delay(user.email, "Verify your email", html)
+
+    async def verify_email(self, token: str) -> None:
+        payload = security.decode_token(token, "verify")
+        if not payload:
+            raise AppError("Invalid or expired token.", 400)
+        user = await self.db.get(User, uuid.UUID(payload["sub"]))
+        if not user:
+            raise AppError("Invalid or expired token.", 400)
+        user.is_verified = True
+        await self.db.commit()
+
+    async def resend_verification(self, email: str) -> None:
+        user = await self._get_by_email(email.lower())
+        if user and not user.is_verified:
+            self._send_verification(user)
 
     async def login(self, email: str, password: str) -> dict:
         user = await self._get_by_email(email.lower())

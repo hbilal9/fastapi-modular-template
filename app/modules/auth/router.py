@@ -8,11 +8,13 @@ from app.modules.auth.schema import (
     MfaVerifyRequest,
     RefreshRequest,
     RegisterRequest,
+    ResendVerificationRequest,
     TokenResponse,
     UserResponse,
+    VerifyEmailRequest,
 )
 from app.modules.auth.service import AuthService
-from app.shared.rate_limiter import LoginRateLimit
+from app.shared.rate_limiter import EmailRateLimit, LoginRateLimit
 from app.shared.response import success
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -32,6 +34,18 @@ async def login(data: LoginRequest, db: DbSession):
 @router.post("/verify-mfa-login")
 async def verify_mfa_login(data: MfaVerifyRequest, db: DbSession):
     return success(await AuthService(db).verify_mfa_login(data.login_token, data.mfa_code))
+
+
+@router.post("/verify-email")
+async def verify_email(data: VerifyEmailRequest, db: DbSession):
+    await AuthService(db).verify_email(data.token)
+    return success(status="verified")
+
+
+@router.post("/resend-verification", dependencies=[EmailRateLimit])
+async def resend_verification(data: ResendVerificationRequest, db: DbSession):
+    await AuthService(db).resend_verification(data.email)
+    return success(status="sent")
 
 
 @router.post("/refresh")

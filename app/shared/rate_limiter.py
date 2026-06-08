@@ -22,3 +22,4 @@ def rate_limit(max_requests: int, window_seconds: int) -> Callable[..., Coroutin
 
 DefaultRateLimit = Depends(rate_limit(60, 60))
 LoginRateLimit = Depends(rate_limit(5, 60))
+EmailRateLimit = Depends(rate_limit(3, 300))

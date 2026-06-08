@@ -41,6 +41,10 @@ def create_mfa_token(subject: str) -> str:
     return _encode(subject, "mfa", timedelta(minutes=5), None)
 
 
+def create_verification_token(subject: str) -> str:
+    return _encode(subject, "verify", timedelta(hours=24), None)
+
+
 def _encode(subject: str, token_type: str, expires_in: timedelta, claims: dict | None) -> str:
     now = datetime.now(UTC)
     payload = {

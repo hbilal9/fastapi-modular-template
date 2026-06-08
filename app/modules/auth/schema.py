@@ -56,3 +56,11 @@ class MfaCodeRequest(BaseModel):
 class MfaVerifyRequest(BaseModel):
     login_token: str
     mfa_code: str
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
