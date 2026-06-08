@@ -170,6 +170,33 @@ Login flow when MFA is enabled:
 
 ---
 
+## Authorization (roles)
+
+Role-based guard as a dependency; `SUPER_ADMIN` bypasses every check.
+
+```python
+from fastapi import Depends
+from app.core.dependencies import AdminUser, require_role
+
+# inject the user (ADMIN or SUPER_ADMIN only)
+@router.get("/admin/stats")
+async def stats(user: AdminUser): ...
+
+# or gate a route without needing the user object
+@router.delete("/things/{id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
+async def delete_thing(id: str): ...
+```
+
+Roles live on `users.role` (`SUPER_ADMIN` / `ADMIN` / `USER`); a failure raises `403`. Roles gate
+**actions**; RLS (`org_id`) gates **rows** — they're separate layers.
+
+**Growing to custom roles + permissions:** when the dashboard needs finer per-role control, add a
+`require_permission("orders:delete")` dependency backed first by a static `ROLE_PERMISSIONS` map (no
+tables), then DB-backed role/permission rows once tenants define their own roles. Routes swap
+`require_role` → `require_permission`; the dependency shape is unchanged.
+
+---
+
 ## Multi-tenancy (Postgres RLS)
 
 Shared schema, isolated at the database. Add `TenantMixin` to any tenant-scoped model and enable the
