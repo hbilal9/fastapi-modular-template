@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
@@ -6,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core import security
 from app.core.config import settings
 from app.core.exceptions import AppError
+from app.modules.auth.mfa import verify_totp
 from app.modules.auth.models import AccountStatus, RefreshToken, User
 from app.providers.email.render import render_email
 from app.providers.email.tasks import send_email
@@ -33,7 +35,7 @@ class AuthService:
         send_email.delay(user.email, "Welcome", html)
         return user
 
-    async def login(self, email: str, password: str) -> tuple[str, str]:
+    async def login(self, email: str, password: str) -> dict:
         user = await self._get_by_email(email.lower())
         if not user:
             await security.hash_password(password)
@@ -44,7 +46,9 @@ class AuthService:
             await self._register_failure(user)
             raise AppError("Invalid credentials.", 401)
         await self._register_success(user)
-        return await self._issue_tokens(user)
+        if user.mfa_enabled:
+            return {"mfa_required": True, "login_token": security.create_mfa_token(str(user.id))}
+        return await self._tokens_response(user)
 
     async def refresh(self, refresh_token: str) -> tuple[str, str]:
         if not security.decode_token(refresh_token, "refresh"):
@@ -76,6 +80,21 @@ class AuthService:
         )
         await self.db.commit()
         return access, refresh
+
+    async def _tokens_response(self, user: User) -> dict:
+        access, refresh = await self._issue_tokens(user)
+        return {"access_token": access, "refresh_token": refresh, "token_type": "bearer"}
+
+    async def verify_mfa_login(self, login_token: str, mfa_code: str) -> dict:
+        payload = security.decode_token(login_token, "mfa")
+        if not payload:
+            raise AppError("Invalid login token.", 401)
+        user = await self.db.get(User, uuid.UUID(payload["sub"]))
+        if not user or not user.mfa_enabled or not user.mfa_secret:
+            raise AppError("Invalid login token.", 401)
+        if not verify_totp(user.mfa_secret, mfa_code):
+            raise AppError("Invalid MFA code.", 401)
+        return await self._tokens_response(user)
 
     async def _register_failure(self, user: User) -> None:
         user.failed_login_attempts += 1

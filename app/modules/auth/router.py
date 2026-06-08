@@ -1,8 +1,11 @@
 from fastapi import APIRouter, status
 
 from app.core.dependencies import CurrentUser, DbSession
+from app.modules.auth.mfa import MfaService
 from app.modules.auth.schema import (
     LoginRequest,
+    MfaCodeRequest,
+    MfaVerifyRequest,
     RefreshRequest,
     RegisterRequest,
     TokenResponse,
@@ -23,9 +26,12 @@ async def register(data: RegisterRequest, db: DbSession):
 
 @router.post("/login", dependencies=[LoginRateLimit])
 async def login(data: LoginRequest, db: DbSession):
-    access, refresh = await AuthService(db).login(data.email, data.password)
-    tokens = TokenResponse(access_token=access, refresh_token=refresh)
-    return success(tokens.model_dump())
+    return success(await AuthService(db).login(data.email, data.password))
+
+
+@router.post("/verify-mfa-login")
+async def verify_mfa_login(data: MfaVerifyRequest, db: DbSession):
+    return success(await AuthService(db).verify_mfa_login(data.login_token, data.mfa_code))
 
 
 @router.post("/refresh")
@@ -43,3 +49,20 @@ async def logout(data: RefreshRequest, db: DbSession):
 @router.get("/me")
 async def me(user: CurrentUser):
     return success(UserResponse.model_validate(user).model_dump(mode="json"))
+
+
+@router.post("/mfa/setup")
+async def mfa_setup(user: CurrentUser, db: DbSession):
+    return success(await MfaService(db).setup(user))
+
+
+@router.post("/mfa/enable")
+async def mfa_enable(data: MfaCodeRequest, user: CurrentUser, db: DbSession):
+    await MfaService(db).enable(user, data.mfa_code)
+    return success(status="enabled")
+
+
+@router.post("/mfa/disable")
+async def mfa_disable(data: MfaCodeRequest, user: CurrentUser, db: DbSession):
+    await MfaService(db).disable(user, data.mfa_code)
+    return success(status="disabled")

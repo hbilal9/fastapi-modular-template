@@ -47,3 +47,12 @@ class UserResponse(BaseModel):
     role: str
     is_verified: bool
     mfa_enabled: bool
+
+
+class MfaCodeRequest(BaseModel):
+    mfa_code: str
+
+
+class MfaVerifyRequest(BaseModel):
+    login_token: str
+    mfa_code: str

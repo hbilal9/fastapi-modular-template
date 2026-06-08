@@ -37,6 +37,10 @@ def create_refresh_token(subject: str, claims: dict | None = None) -> str:
     return _encode(subject, "refresh", timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS), claims)
 
 
+def create_mfa_token(subject: str) -> str:
+    return _encode(subject, "mfa", timedelta(minutes=5), None)
+
+
 def _encode(subject: str, token_type: str, expires_in: timedelta, claims: dict | None) -> str:
     now = datetime.now(UTC)
     payload = {
