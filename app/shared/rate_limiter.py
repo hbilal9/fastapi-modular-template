@@ -1,7 +1,7 @@
 from collections.abc import Callable, Coroutine
 from typing import Any
 
-from fastapi import Request
+from fastapi import Depends, Request
 
 from app.core.dependencies import RedisSession
 from app.core.exceptions import AppError
@@ -18,3 +18,7 @@ def rate_limit(max_requests: int, window_seconds: int) -> Callable[..., Coroutin
             raise AppError("Too many requests.", 429)
 
     return dependency
+
+
+DefaultRateLimit = Depends(rate_limit(60, 60))
+LoginRateLimit = Depends(rate_limit(5, 60))
