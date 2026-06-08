@@ -33,6 +33,16 @@ class Settings(BaseSettings):
     SMTP_FROM: str = "no-reply@example.com"
     SMTP_TLS: bool = True
 
+    STORAGE_PROVIDER: str = "local"
+    STORAGE_LOCAL_DIR: str = "uploads"
+    STORAGE_LOCAL_BASE_URL: str = "http://localhost:8000/uploads"
+    S3_BUCKET: str = ""
+    S3_REGION: str = "us-east-1"
+    S3_ACCESS_KEY: str = ""
+    S3_SECRET_KEY: str = ""
+    S3_ENDPOINT_URL: str = ""
+    S3_PUBLIC_URL: str = ""
+
     @property
     def DATABASE_URL(self) -> str:
         return (

@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.core.exceptions import AppError, app_error_handler, validation_error_handler
 from app.core.lifespan import lifespan
 from app.modules.auth.router import router as auth_router
+from app.modules.file.router import router as file_router
 from app.shared.logging import configure_logging
 
 
@@ -29,6 +30,7 @@ def create_app() -> FastAPI:
         return {"data": {"status": "ok"}, "status": "healthy"}
 
     app.include_router(auth_router, prefix="/api")
+    app.include_router(file_router, prefix="/api")
 
     return app
 

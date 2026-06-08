@@ -23,3 +23,6 @@ celerybeat.pid
 # Misc
 *.db
 .DS_Store
+
+# Local file storage
+uploads/

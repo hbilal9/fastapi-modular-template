@@ -11,6 +11,8 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.exceptions import AppError
 from app.modules.auth.models import User
+from app.providers.storage import get_storage_provider
+from app.providers.storage.base import StorageProvider
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
@@ -42,3 +44,5 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+Storage = Annotated[StorageProvider, Depends(get_storage_provider)]
