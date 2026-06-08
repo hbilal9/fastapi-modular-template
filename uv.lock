@@ -418,7 +418,7 @@ wheels = [
 ]
 
 [[package]]
-name = "fastapi-hexagonal-ddd-postgres-template"
+name = "fastapi-modular-postgres-template"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

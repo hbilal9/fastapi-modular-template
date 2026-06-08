@@ -23,6 +23,3 @@ celerybeat.pid
 # Misc
 *.db
 .DS_Store
-
-# Local planning/working docs (never committed)
-TEMPLATE_SPEC.md
