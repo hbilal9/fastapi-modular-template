@@ -243,6 +243,42 @@ new email = drop a `.html` and call `render_email("x.html", **ctx)`. Add a new b
 
 ---
 
+## File storage
+
+Swappable storage selected by `STORAGE_PROVIDER` (`local` for dev, `s3` for prod). **S3 uses
+presigned URLs** — clients upload and download directly to/from S3; files never stream through the
+backend. The `file` module:
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/file/upload/` | get a presigned **upload** URL |
+| GET | `/api/file/access/?key=…` | get a presigned **access** URL |
+| PUT | `/api/file/local/{key}` | local-dev upload receiver (used when `STORAGE_PROVIDER=local`) |
+
+Flow:
+1. `POST /api/file/upload/` `{filename, content_type}` → `{ key, upload_url, method: "PUT" }`
+2. Client `PUT`s the bytes to `upload_url` (straight to S3 in prod) with the matching `Content-Type`
+3. Persist the returned `key`; later `GET /api/file/access/?key=<key>` → `{ url }` to view/download
+
+In `local` mode the same flow works: `upload_url` points at `/api/file/local/{key}` (the backend
+receiver) and `access_url` is served from `STORAGE_LOCAL_BASE_URL`. To actually serve local files,
+mount the dir in `main.py`:
+```python
+from fastapi.staticfiles import StaticFiles
+app.mount("/uploads", StaticFiles(directory=settings.STORAGE_LOCAL_DIR))
+```
+
+Inject the active provider anywhere via the `Storage` dependency:
+```python
+from app.core.dependencies import Storage
+async def route(storage: Storage):
+    await storage.delete(key)
+```
+Add a backend = implement `StorageProvider` (`upload_url` / `access_url` / `save` / `delete`) and
+register it in `providers/storage/__init__.py`. S3 presigned URLs are **SigV4**, 1-hour expiry.
+
+---
+
 ## Pagination
 
 Page-based (`page` / `per_page`), exposed as a dependency.
