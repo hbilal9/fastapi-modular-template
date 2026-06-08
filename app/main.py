@@ -6,9 +6,11 @@ from app.core.config import settings
 from app.core.exceptions import AppError, app_error_handler, validation_error_handler
 from app.core.lifespan import lifespan
 from app.modules.auth.router import router as auth_router
+from app.shared.logging import configure_logging
 
 
 def create_app() -> FastAPI:
+    configure_logging("DEBUG" if settings.DEBUG else "INFO")
     app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
 
     app.add_middleware(
